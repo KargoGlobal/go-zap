@@ -10,6 +10,15 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var (
+	logger = zap.L()
+)
+
+// SetLogger sets the logger of the package
+func SetLogger(log *zap.Logger) {
+	logger = log
+}
+
 // DEBUG
 
 // DebugWithContext logs on debug level and trace based on the context span if it exists
@@ -25,7 +34,7 @@ func DebugWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Debug logs on debug level
 func Debug(log string, fields ...zapcore.Field) {
-	zap.L().Debug(log, fields...)
+	logger.Debug(log, fields...)
 }
 
 // INFO
@@ -44,7 +53,7 @@ func InfoWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Info logs on info level
 func Info(log string, fields ...zapcore.Field) {
-	zap.L().Info(log, fields...)
+	logger.Info(log, fields...)
 }
 
 // WARN
@@ -63,7 +72,7 @@ func WarnWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Warn logs on warn level
 func Warn(log string, fields ...zapcore.Field) {
-	zap.L().Warn(log, fields...)
+	logger.Warn(log, fields...)
 }
 
 // ERROR
@@ -81,7 +90,7 @@ func ErrorWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Error logs on error level
 func Error(log string, fields ...zapcore.Field) {
-	zap.L().Error(log, fields...)
+	logger.Error(log, fields...)
 }
 
 // DPANIC
@@ -99,7 +108,7 @@ func DPanicWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) 
 
 // DPanic logs on dPanic level
 func DPanic(log string, fields ...zapcore.Field) {
-	zap.L().DPanic(log, fields...)
+	logger.DPanic(log, fields...)
 }
 
 // PANIC
@@ -117,7 +126,7 @@ func PanicWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Panic logs on panic level
 func Panic(log string, fields ...zapcore.Field) {
-	zap.L().Panic(log, fields...)
+	logger.Panic(log, fields...)
 }
 
 // FatalWithContext logs on fatal level and trace based on the context span if it exists
@@ -133,7 +142,7 @@ func FatalWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
 
 // Fatal logs on fatal level
 func Fatal(log string, fields ...zapcore.Field) {
-	zap.L().Fatal(log, fields...)
+	logger.Fatal(log, fields...)
 }
 
 func logSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
