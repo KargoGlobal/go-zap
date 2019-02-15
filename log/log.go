@@ -3,7 +3,7 @@ package log
 import (
 	"context"
 
-	"github.com/opentracing-contrib/go-zap/utils"
+	"github.com/KargoGlobal/go-zap/utils"
 	opentracing "github.com/opentracing/opentracing-go"
 	opentracinglog "github.com/opentracing/opentracing-go/log"
 	"go.uber.org/zap"
