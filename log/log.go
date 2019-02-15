@@ -3,11 +3,11 @@ package log
 import (
 	"context"
 
-	"github.com/KargoGlobal/go-zap/utils"
-	opentracing "github.com/opentracing/opentracing-go"
-	opentracinglog "github.com/opentracing/opentracing-go/log"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/KargoGlobal/go-zap/utils"
+	trace "go.opencensus.io/trace"
+	"go.uber.org/zap"
 )
 
 var (
@@ -23,11 +23,11 @@ func SetLogger(log *zap.Logger) {
 
 // DebugWithContext logs on debug level and trace based on the context span if it exists
 func DebugWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	DebugWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	DebugWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // DebugWithSpan logs on debug level and add the logs on the trace if span exists.
-func DebugWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func DebugWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	Debug(log, fields...)
 	logSpan(span, log, fields...)
 }
@@ -41,11 +41,11 @@ func Debug(log string, fields ...zapcore.Field) {
 
 // InfoWithContext logs on info level and trace based on the context span if it exists
 func InfoWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	InfoWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	InfoWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // InfoWithSpan logs on info level and add the logs on the trace if span exists.
-func InfoWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func InfoWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	Info(log, fields...)
 	logSpan(span, log, fields...)
 
@@ -60,11 +60,11 @@ func Info(log string, fields ...zapcore.Field) {
 
 // WarnWithContext logs on warn level and trace based on the context span if it exists
 func WarnWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	WarnWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	WarnWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // WarnWithSpan logs on warn level and add the logs on the trace if span exists.
-func WarnWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func WarnWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	Warn(log, fields...)
 	logSpan(span, log, fields...)
 
@@ -79,11 +79,11 @@ func Warn(log string, fields ...zapcore.Field) {
 
 // ErrorWithContext logs on error level and trace based on the context span if it exists
 func ErrorWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	ErrorWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	ErrorWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // ErrorWithSpan logs on error level and add the logs on the trace if span exists.
-func ErrorWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func ErrorWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	Error(log, fields...)
 	logSpan(span, log, fields...)
 }
@@ -97,11 +97,11 @@ func Error(log string, fields ...zapcore.Field) {
 
 // DPanicWithContext logs on dPanic level and trace based on the context span if it exists
 func DPanicWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	DPanicWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	DPanicWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // DPanicWithSpan logs on dPanic level and add the logs on the trace if span exists.
-func DPanicWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func DPanicWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	logSpan(span, log, fields...)
 	DPanic(log, fields...)
 }
@@ -115,11 +115,11 @@ func DPanic(log string, fields ...zapcore.Field) {
 
 // PanicWithContext logs on panic level and trace based on the context span if it exists
 func PanicWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	PanicWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	PanicWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // PanicWithSpan logs on panic level and add the logs on the trace if span exists.
-func PanicWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func PanicWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	logSpan(span, log, fields...)
 	Panic(log, fields...)
 }
@@ -131,11 +131,11 @@ func Panic(log string, fields ...zapcore.Field) {
 
 // FatalWithContext logs on fatal level and trace based on the context span if it exists
 func FatalWithContext(ctx context.Context, log string, fields ...zapcore.Field) {
-	FatalWithSpan(opentracing.SpanFromContext(ctx), log, fields...)
+	FatalWithSpan(trace.FromContext(ctx), log, fields...)
 }
 
 // FatalWithSpan logs on fatal level and add the logs on the trace if span exists.
-func FatalWithSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func FatalWithSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	logSpan(span, log, fields...)
 	Fatal(log, fields...)
 }
@@ -145,15 +145,12 @@ func Fatal(log string, fields ...zapcore.Field) {
 	logger.Fatal(log, fields...)
 }
 
-func logSpan(span opentracing.Span, log string, fields ...zapcore.Field) {
+func logSpan(span *trace.Span, log string, fields ...zapcore.Field) {
 	if span != nil {
-		opentracingFields := make([]opentracinglog.Field, len(fields)+1)
-		if log != "" {
-			opentracingFields = append(opentracingFields, opentracinglog.String("event", log))
-		}
+		traceAttributes := []trace.Attribute{}
 		if len(fields) > 0 {
-			opentracingFields = append(opentracingFields, utils.ZapFieldsToOpentracing(fields...)...)
+			traceAttributes = append(traceAttributes, utils.ZapFieldsToOpenCensus(fields...)...)
 		}
-		span.LogFields(opentracingFields...)
+		span.Annotate(traceAttributes, log)
 	}
 }

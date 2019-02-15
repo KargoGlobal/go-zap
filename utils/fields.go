@@ -2,28 +2,29 @@ package utils
 
 import (
 	"fmt"
-	"math"
-	"time"
 
-	opentracinglog "github.com/opentracing/opentracing-go/log"
+	trace "go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
 )
 
-// ZapFieldsToOpentracing returns a table of standard opentracing field based on
+// ZapFieldsToOpenCensus returns a table of standard opentracing field based on
 // the inputed table of Zap field.
-func ZapFieldsToOpentracing(zapFields ...zapcore.Field) []opentracinglog.Field {
-	opentracingFields := make([]opentracinglog.Field, len(zapFields))
+func ZapFieldsToOpenCensus(zapFields ...zapcore.Field) []trace.Attribute {
+	traceAttributes := []trace.Attribute{}
 
-	for i, zapField := range zapFields {
-		opentracingFields[i] = ZapFieldToOpentracing(zapField)
+	for _, zapField := range zapFields {
+		attribute, err := ZapFieldToOpenCensus(zapField)
+		if err == nil {
+			traceAttributes = append(traceAttributes, attribute)
+		}
 	}
 
-	return opentracingFields
+	return traceAttributes
 }
 
-// ZapFieldToOpentracing returns a standard opentracing field based on the
+// ZapFieldToOpenCensus returns a standard opentracing field based on the
 // input Zap field.
-func ZapFieldToOpentracing(zapField zapcore.Field) opentracinglog.Field {
+func ZapFieldToOpenCensus(zapField zapcore.Field) (trace.Attribute, error) {
 	switch zapField.Type {
 
 	case zapcore.BoolType:
@@ -31,28 +32,12 @@ func ZapFieldToOpentracing(zapField zapcore.Field) opentracinglog.Field {
 		if zapField.Integer >= 1 {
 			val = true
 		}
-		return opentracinglog.Bool(zapField.Key, val)
-	case zapcore.Float32Type:
-		return opentracinglog.Float32(zapField.Key, math.Float32frombits(uint32(zapField.Integer)))
-	case zapcore.Float64Type:
-		return opentracinglog.Float64(zapField.Key, math.Float64frombits(uint64(zapField.Integer)))
+		return trace.BoolAttribute(zapField.Key, val), nil
 	case zapcore.Int64Type:
-		return opentracinglog.Int64(zapField.Key, int64(zapField.Integer))
-	case zapcore.Int32Type:
-		return opentracinglog.Int32(zapField.Key, int32(zapField.Integer))
+		return trace.Int64Attribute(zapField.Key, int64(zapField.Integer)), nil
 	case zapcore.StringType:
-		return opentracinglog.String(zapField.Key, zapField.String)
-	case zapcore.StringerType:
-		return opentracinglog.String(zapField.Key, zapField.Interface.(fmt.Stringer).String())
-	case zapcore.Uint64Type:
-		return opentracinglog.Uint64(zapField.Key, uint64(zapField.Integer))
-	case zapcore.Uint32Type:
-		return opentracinglog.Uint32(zapField.Key, uint32(zapField.Integer))
-	case zapcore.DurationType:
-		return opentracinglog.String(zapField.Key, time.Duration(zapField.Integer).String())
-	case zapcore.ErrorType:
-		return opentracinglog.Error(zapField.Interface.(error))
+		return trace.StringAttribute(zapField.Key, zapField.String), nil
 	default:
-		return opentracinglog.Object(zapField.Key, zapField.Interface)
+		return trace.Attribute{}, fmt.Errorf("invalid zap attribue type")
 	}
 }
